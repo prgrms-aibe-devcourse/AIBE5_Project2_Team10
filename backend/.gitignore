@@ -40,3 +40,9 @@ mysql_data/
 
 # application.yml 차단
 src/main/resources/application.yml
+
+
+.idea/
+*.iml
+out/
+gen/
