@@ -1,0 +1,4 @@
+reviews:
+  auto_review:
+    enabled: true
+  high_level_summary: true
