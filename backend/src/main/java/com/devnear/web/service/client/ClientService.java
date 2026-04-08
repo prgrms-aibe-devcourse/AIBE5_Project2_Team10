@@ -18,70 +18,61 @@ public class ClientService {
     private final ClientProfileRepository clientProfileRepository;
     private final UserRepository userRepository;
 
-    /**
-     * 클라이언트 프로필 등록
-     */
     @Transactional
-    public Long registerProfile(Long userId, ClientProfileRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+    public Long registerProfile(String email, ClientProfileRequest request) {
+        User user = findUserByEmail(email);
 
         if (clientProfileRepository.existsByUser(user)) {
-            throw new IllegalArgumentException("이미 등록된 클라이언트 프로필이 존재합니다.");
+            throw new IllegalStateException("이미 프로필이 등록된 사용자입니다.");
         }
 
         if (clientProfileRepository.existsByBn(request.getBn())) {
             throw new IllegalArgumentException("이미 등록된 사업자 번호입니다.");
         }
 
-        ClientProfile clientProfile = request.toEntity(user);
-        return clientProfileRepository.save(clientProfile).getId();
+        ClientProfile profile = request.toEntity(user);
+        return clientProfileRepository.save(profile).getId();
     }
 
-    /**
-     * 클라이언트 프로필 상세 조회
-     * 컨트롤러에서 호출하여 화면에 바로 내려줄 때 사용합니다.
-     */
-    public ClientProfileResponse getProfileResponse(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+    @Transactional(readOnly = true) // 트랜잭션을 열어 영속성 컨텍스트를 유지
+    public ClientProfileResponse getMyProfile(String email) {
+        User user = findUserByEmail(email);
 
-        ClientProfile profile = clientProfileRepository.findByUser(user)
+        ClientProfile profile = clientProfileRepository.findByUserWithUser(user)
                 .orElseThrow(() -> new IllegalArgumentException("클라이언트 프로필을 찾을 수 없습니다."));
 
-        return ClientProfileResponse.from(profile); // 정적 팩토리 메서드 활용
+        return ClientProfileResponse.from(profile);
     }
 
-    /**
-     * 내부 로직용 엔티티 조회
-     */
-    public ClientProfile getProfile(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+    @Transactional
+    public void updateProfile(String email, ClientProfileRequest request) {
+        ClientProfile profile = findProfileByEmail(email);
+        profile.update(request);
+    }
 
+    @Transactional
+    public void deleteProfile(String email) {
+        ClientProfile profile = findProfileByEmail(email);
+        clientProfileRepository.delete(profile);
+    }
+
+    //    @Transactional
+    //    public void updateLogo(String email, String logoUrl) {
+    //        ClientProfile profile = findProfileByEmail(email);
+    //        profile.updateLogo(logoUrl);
+    //    }
+
+    // --- 공통 내부 헬퍼 메서드 ---
+
+    // --- 내부 헬퍼 메서드 ---
+    private User findUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+    }
+
+    private ClientProfile findProfileByEmail(String email) {
+        User user = findUserByEmail(email);
         return clientProfileRepository.findByUser(user)
                 .orElseThrow(() -> new IllegalArgumentException("클라이언트 프로필을 찾을 수 없습니다."));
-    }
-
-    @Transactional
-    public void updateLogo(Long userId, String logoUrl) {
-        ClientProfile profile = clientProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("프로필이 없습니다."));
-        profile.updateLogo(logoUrl);
-    }
-
-    @Transactional
-    public void updateProfile(Long userId, ClientProfileRequest request) {
-        // 1. 해당 유저의 프로필이 있는지 확인
-        ClientProfile profile = clientProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("수정할 프로필이 존재하지 않습니다."));
-
-        // 2. 사업자 번호가 변경되었다면 중복 체크 (선택 사항)
-        if (!profile.getBn().equals(request.getBn()) && clientProfileRepository.existsByBn(request.getBn())) {
-            throw new IllegalArgumentException("이미 사용 중인 사업자 번호입니다.");
-        }
-
-        // 3. 데이터 업데이트
-        profile.update(request);
     }
 }

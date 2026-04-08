@@ -3,6 +3,8 @@ package com.devnear.web.dto.client;
 import com.devnear.web.domain.client.ClientProfile;
 import com.devnear.web.domain.user.User;
 import jakarta.validation.constraints.NotBlank; // 추가 권장
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -11,18 +13,25 @@ import lombok.NoArgsConstructor;
 public class ClientProfileRequest {
 
     @NotBlank(message = "업체명은 필수입니다.")
+    @Size(max = 100, message = "업체명은 100자 이내여야 합니다.")
     private String companyName;
 
     @NotBlank(message = "사업자번호는 필수입니다.")
+    @Size(max = 12, message = "사업자번호는 12자 이내여야 합니다.")
+    @Pattern(regexp = "^\\d{3}-\\d{2}-\\d{5}$", message = "사업자번호 형식이 올바르지 않습니다. (예: 000-00-00000)")
     private String bn;
 
     @NotBlank(message = "대표자명은 필수입니다.")
+    @Size(max = 50, message = "대표자명은 50자 이내여야 합니다.")
     private String representativeName;
 
     private String introduction;
+
+    @Size(max = 255, message = "홈페이지 주소는 255자 이내여야 합니다.")
     private String homepageUrl;
 
     @NotBlank(message = "연락처는 필수입니다.")
+    @Size(max = 20, message = "연락처는 20자 이내여야 합니다.")
     private String phoneNum;
 
     public ClientProfile toEntity(User user) {
