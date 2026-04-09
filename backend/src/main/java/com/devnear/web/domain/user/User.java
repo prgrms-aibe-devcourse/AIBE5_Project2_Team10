@@ -77,9 +77,18 @@ public class User extends BaseTimeEntity implements UserDetails {
         this.status = UserStatus.ACTIVE;
     }
 
-    public User update(String name, String profileImageUrl) {
+// User.java 내부
+
+    /**
+     * [보고] 소셜 로그인 정보 업데이트 및 계정 연동을 위한 메서드.
+     * 이름, 프로필 사진뿐만 아니라 제공자(provider) 정보까지 갱신하여
+     * 기존 LOCAL 계정과 소셜 계정을 타당하게 통합함.
+     */
+    public User update(String name, String profileImageUrl, String provider, String providerId) {
         this.name = name;
         this.profileImageUrl = profileImageUrl;
+        this.provider = provider;     // [추가] 제공자 정보 업데이트 (google 등)
+        this.providerId = providerId; // [추가] 제공자 고유 ID 업데이트
         return this;
     }
 

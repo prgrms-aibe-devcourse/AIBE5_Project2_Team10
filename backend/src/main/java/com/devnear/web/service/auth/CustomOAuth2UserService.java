@@ -58,9 +58,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String picture = (String) attributes.get("picture");
         String sub = (String) attributes.get("sub");
 
+        if (email == null || sub == null) {
+            // [보고] 필수 정보가 없으면 인증 실패 처리를 던지는 것이 타당함
+            throw new OAuth2AuthenticationException("필수 인증 정보(email, sub)가 누락되었습니다.");
+        }
+
         // [보고] 이메일로 기존 유저인지 확인하고, 이름이나 사진이 바뀌었으면 업데이트 (트랜잭션 덕분에 자동 반영됨)
         return userRepository.findByEmail(email)
-                .map(entity -> entity.update(name, picture))
+                .map(entity -> entity.update(name, picture, registrationId, sub))
                 .orElseGet(() -> {
                     // [보고] 닉네임 중복 방지 및 길이 초과 방지를 위해 무작위 UUID 기반 닉네임 생성
                     String safeNickname = "user_" + UUID.randomUUID().toString().substring(0, 8);
