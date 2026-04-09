@@ -16,4 +16,6 @@ public interface ClientProfileRepository extends JpaRepository<ClientProfile, Lo
     boolean existsByUser(User user);
 
     boolean existsByBn(String bn);
+
+    boolean existsByBnAndIdNot(String bn, Long id);
 }

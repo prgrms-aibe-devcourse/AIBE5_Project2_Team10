@@ -45,6 +45,9 @@ public class ClientService {
     @Transactional
     public void updateProfile(User user, ClientProfileRequest request) {
         ClientProfile profile = findProfileByUser(user);
+        if (clientProfileRepository.existsByBnAndIdNot(request.getBn(), profile.getId())){
+            throw new DuplicateProfileException("이미 등록된 사업자 번호입니다.");
+        }
         profile.update(request);
     }
 
