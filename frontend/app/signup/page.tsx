@@ -46,22 +46,26 @@ export default function SignupPage() {
                 <form onSubmit={handleSignup} className="space-y-5">
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-zinc-400 ml-1">이메일</label>
-                        <input placeholder="email@example.com" className="w-full p-4 bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-dn-purple outline-none transition-all" onChange={(e) => setFormData({...formData, email: e.target.value})} required />
+                        {/* [수정] 제어 컴포넌트 적용: value 추가 */}
+                        <input value={formData.email} placeholder="email@example.com" className="w-full p-4 bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-dn-purple outline-none transition-all" onChange={(e) => setFormData({...formData, email: e.target.value})} required />
                     </div>
 
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-zinc-400 ml-1">비밀번호</label>
-                        <input type="password" placeholder="••••••••" className="w-full p-4 bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-dn-purple outline-none transition-all" onChange={(e) => setFormData({...formData, password: e.target.value})} required />
+                        {/* [수정] 제어 컴포넌트 적용: value 추가 */}
+                        <input value={formData.password} type="password" placeholder="••••••••" className="w-full p-4 bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-dn-purple outline-none transition-all" onChange={(e) => setFormData({...formData, password: e.target.value})} required />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <label className="text-xs font-bold text-zinc-400 ml-1">실명</label>
-                            <input placeholder="성함" className="w-full p-4 bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-dn-purple outline-none transition-all" onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                            {/* [수정] 제어 컴포넌트 적용: value 추가 */}
+                            <input value={formData.name} placeholder="성함" className="w-full p-4 bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-dn-purple outline-none transition-all" onChange={(e) => setFormData({...formData, name: e.target.value})} required />
                         </div>
                         <div className="space-y-1">
                             <label className="text-xs font-bold text-zinc-400 ml-1">닉네임</label>
-                            <input placeholder="별명" className="w-full p-4 bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-dn-purple outline-none transition-all" onChange={(e) => setFormData({...formData, nickname: e.target.value})} required />
+                            {/* [수정] 제어 컴포넌트 적용: value 추가 */}
+                            <input value={formData.nickname} placeholder="별명" className="w-full p-4 bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-dn-purple outline-none transition-all" onChange={(e) => setFormData({...formData, nickname: e.target.value})} required />
                         </div>
                     </div>
 

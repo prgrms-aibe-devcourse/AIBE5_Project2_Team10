@@ -28,6 +28,12 @@ export default function LoginPage() {
         }
     };
 
+    // [수정] 배포 환경을 고려하여 .env.local의 API 주소를 사용하도록 수정
+    const handleGoogleLogin = () => {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        window.location.href = `${baseUrl}/oauth2/authorization/google`;
+    };
+
     return (
         <div className="flex items-center justify-center min-h-screen p-6">
             {/* 상단 네비게이션 바 (웹사이트 느낌) */}
@@ -59,10 +65,12 @@ export default function LoginPage() {
                     <form onSubmit={handleLogin} className="space-y-4">
                         <div className="space-y-1">
                             <label className="text-xs font-bold text-zinc-400 ml-1">이메일</label>
+                            {/* 제어 컴포넌트(value 연결)가 이미 적용되어 있습니다 */}
                             <input
                                 type="email"
                                 placeholder="이메일을 입력해주세요"
                                 className="w-full p-4 bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-dn-purple outline-none transition-all"
+                                value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                             />
@@ -73,6 +81,7 @@ export default function LoginPage() {
                                 type="password"
                                 placeholder="비밀번호를 입력해주세요"
                                 className="w-full p-4 bg-zinc-50 border-none rounded-2xl focus:ring-2 focus:ring-dn-purple outline-none transition-all"
+                                value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                             />
@@ -92,7 +101,7 @@ export default function LoginPage() {
                     </div>
 
                     <button
-                        onClick={() => window.location.href = "http://localhost:8080/oauth2/authorization/google"}
+                        onClick={handleGoogleLogin}
                         className="w-full flex items-center justify-center gap-3 border border-zinc-100 p-4 rounded-2xl hover:bg-zinc-50 transition-all font-bold text-zinc-700 mb-6 shadow-sm"
                     >
                         <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="w-5 h-5" />
