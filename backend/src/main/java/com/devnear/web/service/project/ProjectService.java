@@ -25,6 +25,12 @@ public class ProjectService {
     @Transactional
     public Long createProject(User user, ProjectRequest request) {
         ClientProfile clientProfile = findClientProfileByUser(user);
+
+        // 비즈니스 로직 수준의 추가 검증 (선택 사항)
+        if (request.isOffline() && (request.getLocation() == null || request.getLatitude() == null || request.getLongitude() == null)) {
+            throw new IllegalArgumentException("오프라인 프로젝트는 장소 정보가 필수입니다.");
+        }
+
         return projectRepository.save(request.toEntity(clientProfile)).getId();
     }
 

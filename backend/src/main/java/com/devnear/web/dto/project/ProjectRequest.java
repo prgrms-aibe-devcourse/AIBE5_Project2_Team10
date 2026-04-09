@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
+import jakarta.validation.GroupSequence;
+import jakarta.validation.groups.Default;
+
 @Getter
 @NoArgsConstructor
 public class ProjectRequest {
@@ -28,6 +31,22 @@ public class ProjectRequest {
     private boolean online;
     private boolean offline;
 
+    @Size(max = 500, message = "주소는 500자를 초과할 수 없습니다.")
+    private String location;
+
+    private Double latitude;
+
+    private Double longitude;
+
+    @AssertTrue(message = "오프라인 프로젝트는 주소 정보가 필수입니다.")
+    private boolean isOfflineAddressValid() {
+        if (!offline) {
+            return true;
+        }
+        return location != null && ! location.trim().isEmpty()
+                && latitude != null && longitude != null;
+    }
+
     public Project toEntity(ClientProfile clientProfile) {
         return Project.builder()
                 .clientProfile(clientProfile)
@@ -37,6 +56,9 @@ public class ProjectRequest {
                 .detail(detail)
                 .online(online)
                 .offline(offline)
+                .location(location)
+                .latitude(latitude)
+                .longitude(longitude)
                 .build();
     }
 }
