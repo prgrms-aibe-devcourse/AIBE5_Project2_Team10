@@ -2,6 +2,8 @@ package com.devnear.global.config;
 
 import com.devnear.global.auth.JwtAuthenticationFilter;
 import com.devnear.global.auth.JwtTokenProvider;
+import com.devnear.global.auth.OAuth2SuccessHandler;
+import com.devnear.web.service.auth.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,66 +15,70 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.http.HttpMethod;
 
-/**
- * [보고] 애플리케이션 보안 계층 설정을 위한 전역 Configuration 클래스.
- * JWT 기반 인증 로직 및 엔드포인트 접근 권한을 관리함.
- */
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // [보고] JWT 토큰 발급 및 검증을 담당하는 Provider 빈 주입.
     private final JwtTokenProvider jwtTokenProvider;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // [보고] JWT 방식을 사용하므로 기본 CSRF 방어 기능은 비활성화 조치함.
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // [보고] 세션 정책 설정. JWT 인증 방식을 채택하였으므로, 
-                // 서버 측에서 세션을 생성하지 않도록 STATELESS 정책을 강제함.
+                // [복구] CORS 설정 추가 (프론트엔드 통신 허용)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // [보고] 엔드포인트별 인가(Authorization) 정책 정의.
-                // SecurityConfig.java 의 authorizeHttpRequests 부분 수정
-
                 .authorizeHttpRequests(auth -> auth
-                        // 0. [공통] 누구나 접근 가능
-                        .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // [추가] 브라우저의 preflight(OPTIONS) 요청이 소셜 로그인 페이지로 리다이렉트 되는 현상 방지
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // [추가] 403 에러가 500 서버 에러로 가려지는 현상 방지를 위해 에러 페이지 허용
+                        .requestMatchers("/error").permitAll()
+
+                        // 0. [공통] 누구나 접근 가능 (소셜 로그인 진입점 추가)
+                        // v1 경로가 있을 수 있으니 포함하여 열어둡니다.
+                        .requestMatchers("/api/auth/**", "/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/login/**", "/oauth2/**").permitAll()
 
                         // 1. [조회] GET 요청은 비로그인도 가능 (명세서 준수)
-                        .requestMatchers(HttpMethod.GET, "/api/freelancers/**", "/api/projects/**", "/api/portfolios/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/freelancers/**", "/api/v1/freelancers/**", "/api/projects/**", "/api/v1/projects/**", "/api/portfolios/**", "/api/v1/portfolios/**", "/api/skills/**", "/api/v1/skills/**").permitAll()
+
+                        // [추가] 온보딩 API는 임시 권한인 GUEST만 접근할 수 있도록 명시
+                        .requestMatchers(HttpMethod.POST, "/api/users/onboarding", "/api/v1/users/onboarding").hasRole("GUEST")
 
                         // 2. [인증] 내 정보 관련 (로그인 필수)
-                        .requestMatchers("/api/users/me").authenticated()
+                        // [보고] GUEST 유저도 온보딩 화면에서 내 정보(이메일, 임시 닉네임)를 불러와야 하므로 권한에 GUEST 추가
+                        .requestMatchers("/api/users/me", "/api/v1/users/me").hasAnyRole("GUEST", "CLIENT", "FREELANCER", "BOTH")
 
-                        // 3. [권한] 프리랜서 전용 구역 (중요: /test 포함 모든 하위 경로 잠금)
-                        .requestMatchers(HttpMethod.POST, "/api/portfolios", "/api/applications").hasAnyRole("FREELANCER", "BOTH")
-                        .requestMatchers(HttpMethod.DELETE, "/api/portfolios/**").hasAnyRole("FREELANCER", "BOTH")
-                        .requestMatchers(HttpMethod.PATCH, "/api/freelancers/status").hasAnyRole("FREELANCER", "BOTH")
-                        // [추가] 프리랜서 도메인 전체에 대한 계급 검사 (이게 있어야 CLIENT를 입구 컷 함)
-                        .requestMatchers("/api/freelancer/**").hasAnyRole("FREELANCER", "BOTH")
+                        // 3. [권한] 프리랜서 전용 구역
+                        .requestMatchers(HttpMethod.POST, "/api/portfolios", "/api/v1/portfolios", "/api/applications", "/api/v1/applications", "/api/skills", "/api/v1/skills").hasAnyRole("FREELANCER", "BOTH")
+                        .requestMatchers(HttpMethod.DELETE, "/api/portfolios/**", "/api/v1/portfolios/**", "/api/skills/**", "/api/v1/skills/**").hasAnyRole("FREELANCER", "BOTH")
+                        .requestMatchers(HttpMethod.PATCH, "/api/freelancers/status", "/api/v1/freelancers/status").hasAnyRole("FREELANCER", "BOTH")
+                        .requestMatchers("/api/freelancer/**", "/api/v1/freelancer/**").hasAnyRole("FREELANCER", "BOTH")
 
-                        // 4. [권한] 클라이언트 전용 구역 (리뷰 피드백 반영: HttpMethod.PATCH 명시)
-                        .requestMatchers(HttpMethod.POST, "/api/projects").hasAnyRole("CLIENT", "BOTH")
-                        // [수정] 지원 수락(PATCH) 메서드를 명시하여 모호성 제거
-                        .requestMatchers(HttpMethod.PATCH, "/api/projects/*/applications", "/api/applications/*/accept")
-                        .hasAnyRole("CLIENT", "BOTH")
-                        // [추가] 클라이언트 도메인 전체에 대한 계급 검사
-                        .requestMatchers("/api/client/**").hasAnyRole("CLIENT", "BOTH")
+                        // 4. [권한] 클라이언트 전용 구역
+                        .requestMatchers(HttpMethod.POST, "/api/projects", "/api/v1/projects").hasAnyRole("CLIENT", "BOTH")
+                        .requestMatchers(HttpMethod.PATCH, "/api/projects/*/applications", "/api/v1/projects/*/applications", "/api/applications/*/accept", "/api/v1/applications/*/accept").hasAnyRole("CLIENT", "BOTH")
+                        .requestMatchers("/api/client/**", "/api/v1/client/**").hasAnyRole("CLIENT", "BOTH")
 
-                        // 5. [나머지] 위 규칙에 해당 안 되는 모든 요청은 로그인 필수
-                        .anyRequest().authenticated()
+                        // 5. [나머지] 위 규칙에 해당 안 되는 모든 비즈니스 로직은 정식 유저(GUEST 제외)만 접근 가능하도록 강화
+                        .anyRequest().hasAnyRole("CLIENT", "FREELANCER", "BOTH")
                 )
-
-                // [보고] 커스텀 JWT 인증 필터를 UsernamePasswordAuthenticationFilter 이전에 배치하여,
-                // 기본 로그인 처리 전 토큰 유효성 검증을 선행하도록 구성함.
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                        .successHandler(oAuth2SuccessHandler)
+                )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
                         UsernamePasswordAuthenticationFilter.class);
 
@@ -80,9 +86,22 @@ public class SecurityConfig {
     }
 
     /**
-     * [보고] 사용자의 비밀번호 단방향 암호화를 위한 PasswordEncoder 빈 등록.
-     * BCrypt 해싱 알고리즘을 사용함.
+     * [보고] 프론트엔드(localhost:3000) 통신을 위한 CORS 전역 설정
      */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000")); // 프론트엔드 주소 허용
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization")); // 프론트에서 헤더를 읽을 수 있도록 허용
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
