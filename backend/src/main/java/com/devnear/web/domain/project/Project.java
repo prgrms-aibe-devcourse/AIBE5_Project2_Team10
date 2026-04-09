@@ -33,8 +33,8 @@ public class Project extends BaseTimeEntity {
     @Column(nullable = false)
     private Integer budget;
 
-    @Column(name = "deadline", nullable = false)
-    private LocalDate deadline; // SQL의 date 타입과 매핑
+    @Column(name = "Deadline", nullable = false)
+    private LocalDate deadline;
 
     @Column(columnDefinition = "TEXT")
     private String detail;
@@ -69,5 +69,23 @@ public class Project extends BaseTimeEntity {
         this.detail = request.getDetail();
         this.online = request.isOnline();
         this.offline = request.isOffline();
+    }
+
+    public void close() {
+        this.status = ProjectStatus.CLOSED;
+    }
+
+    public void start() {
+        if (this.status != ProjectStatus.OPEN) {
+            throw new IllegalStateException("모집 중인 프로젝트만 시작할 수 있습니다.");
+        }
+        this.status = ProjectStatus.IN_PROGRESS;
+    }
+
+    public void complete() {
+        if (this.status != ProjectStatus.IN_PROGRESS) {
+            throw new IllegalStateException("진행 중인 프로젝트만 완료할 수 있습니다.");
+        }
+        this.status = ProjectStatus.COMPLETED;
     }
 }

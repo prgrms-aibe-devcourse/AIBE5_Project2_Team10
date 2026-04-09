@@ -11,8 +11,11 @@ public class ClientProfileResponse {
     private String email;
     private String nickname;
     private String companyName;
+    private String bn;
     private String representativeName;
     private String introduction;
+    private String homepageUrl;
+    private String phoneNum;
     private String verificationStatus;
     private Integer totalProjects;
     private Double rating;
@@ -24,16 +27,17 @@ public class ClientProfileResponse {
 
         return ClientProfileResponse.builder()
                 .clientId(profile.getId())
-                // 2. 이 부분에서 User 객체에 접근하므로 트랜잭션 유지가 필수입니다.
                 .email(profile.getUser().getEmail())
                 .nickname(profile.getUser().getNickname())
                 .companyName(profile.getCompanyName())
+                .bn(profile.getBn())
                 .representativeName(profile.getRepresentativeName())
                 .introduction(profile.getIntroduction())
-                // 3. Enum 타입은 .name()을 통해 문자열로 변환
+                .homepageUrl(profile.getHomepageUrl())
+                .phoneNum(profile.getPhoneNum())
                 .verificationStatus(profile.getVerificationStatus().name())
                 .totalProjects(profile.getTotalProjects())
-                .rating(safeRating) // 위에서 계산한 안전한 값 사용
+                .rating(safeRating)
                 .build();
     }
 }

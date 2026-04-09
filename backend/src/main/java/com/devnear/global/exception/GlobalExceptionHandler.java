@@ -1,5 +1,8 @@
 package com.devnear.global.exception;
 
+import com.devnear.web.exception.DuplicateProfileException;
+import com.devnear.web.exception.ProjectAccessDeniedException;
+import com.devnear.web.exception.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,34 +11,48 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
 
-@RestControllerAdvice // 모든 컨트롤러에서 발생하는 예외를 여기서 다 잡겠다는 선언
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException e, HttpServletRequest request) {
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value()) // 500 대신 400 전달
-                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message(e.getMessage()) // "가입되지 않은 이메일입니다" 등이 들어감
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+            IllegalArgumentException e, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, e.getMessage(), request); // 중복 코드 제거
     }
 
-    // 나중에 발생할 수 있는 모든 에러(500)에 대한 최종 방어선
+    @ExceptionHandler(DuplicateProfileException.class)  // 추가
+    public ResponseEntity<ErrorResponse> handleDuplicate(
+            DuplicateProfileException e, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, e.getMessage(), request);
+    }
+
+    @ExceptionHandler(ProjectAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleProjectAccessDenied(
+            ProjectAccessDeniedException e, HttpServletRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, e.getMessage(), request);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(
+            ResourceNotFoundException e, HttpServletRequest request) {
+        return buildResponse(HttpStatus.NOT_FOUND, e.getMessage(), request);
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGlobalException(Exception e, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleGlobalException(
+            Exception e, HttpServletRequest request) {
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.", request);
+    }
+
+    private ResponseEntity<ErrorResponse> buildResponse(
+            HttpStatus status, String message, HttpServletRequest request) {
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
-                .message("서버 내부 오류가 발생했습니다.")
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(message)
                 .path(request.getRequestURI())
                 .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(errorResponse, status);
     }
 }

@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "client_profiles")
+@Table(name = "client_profile")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ClientProfile extends BaseTimeEntity {

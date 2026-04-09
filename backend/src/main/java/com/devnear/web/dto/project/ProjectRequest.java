@@ -17,9 +17,11 @@ public class ProjectRequest {
     private String projectName;
 
     @NotNull(message = "예산은 필수입니다.")
+    @Positive(message = "예산은 0보다 커야 합니다.")  // 추가
     private Integer budget;
 
     @NotNull(message = "마감기한은 필수입니다.")
+    @Future(message = "마감기한은 오늘 이후여야 합니다.")  // 추가
     private LocalDate deadline;
 
     private String detail;

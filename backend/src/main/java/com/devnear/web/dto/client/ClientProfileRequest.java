@@ -25,13 +25,16 @@ public class ClientProfileRequest {
     @Size(max = 50, message = "대표자명은 50자 이내여야 합니다.")
     private String representativeName;
 
+    @Size(max = 500, message = "소개는 500자 이내여야 합니다.")  // 추가
     private String introduction;
 
     @Size(max = 255, message = "홈페이지 주소는 255자 이내여야 합니다.")
+    @Pattern(regexp = "^(https?://).+", message = "홈페이지 주소는 http:// 또는 https://로 시작해야 합니다.")  // 추가
     private String homepageUrl;
 
     @NotBlank(message = "연락처는 필수입니다.")
     @Size(max = 20, message = "연락처는 20자 이내여야 합니다.")
+    @Pattern(regexp = "^\\d{2,3}-\\d{3,4}-\\d{4}$", message = "연락처 형식이 올바르지 않습니다. (예: 010-1234-5678)")  // 추가
     private String phoneNum;
 
     public ClientProfile toEntity(User user) {

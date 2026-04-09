@@ -26,6 +26,12 @@ public class ProjectResponse {
                 .projectId(project.getId())
                 .companyName(project.getClientProfile().getCompanyName())
                 .projectName(project.getProjectName())
+                .budget(project.getBudget())
+                .deadline(project.getDeadline())
+                .detail(project.getDetail())
+                .status(project.getStatus().name())
+                .online(project.isOnline())
+                .offline(project.isOffline())
                 .build();
     }
 }
