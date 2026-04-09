@@ -44,8 +44,8 @@ public class User extends BaseTimeEntity implements UserDetails {
     @Column(nullable = false, length = 50)
     private String name;
 
-    // [보고] 소셜 가입 초기에는 닉네임이 없을 수 있으므로 nullable = true
-    @Column(nullable = true, unique = true, length = 50)
+    // [수정] 봇 리뷰 반영: 이제 항상 임시 닉네임을 생성해서 넣어주므로 nullable = false로 복구
+    @Column(nullable = false, unique = true, length = 50)
     private String nickname;
 
     @Column(name = "phone_number", length = 20)
@@ -85,8 +85,6 @@ public class User extends BaseTimeEntity implements UserDetails {
         this.status = UserStatus.ACTIVE;
     }
 
-// User.java 내부
-
     /**
      * [보고] 소셜 로그인 정보 업데이트 및 계정 연동을 위한 메서드.
      * 이름, 프로필 사진뿐만 아니라 제공자(provider) 정보까지 갱신하여
@@ -123,8 +121,7 @@ public class User extends BaseTimeEntity implements UserDetails {
 
     @Override
     public boolean isEnabled() { 
-        // [수정] INACTIVE(휴식 중) 유저도 로그인 자체는 가능해야 하므로,
-        // 오직 WITHDRAWN(탈퇴) 상태인 경우에만 비활성화(false)로 처리함.
-        return this.status != UserStatus.WITHDRAWN; 
+        // [수정] 봇 리뷰 반영: "화이트리스트" 방식으로 허용되는 상태만 명시함
+        return this.status == UserStatus.ACTIVE || this.status == UserStatus.INACTIVE;
     }
 }

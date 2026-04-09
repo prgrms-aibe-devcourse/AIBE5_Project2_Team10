@@ -4,6 +4,7 @@ import com.devnear.web.domain.enums.Role;
 import com.devnear.web.domain.user.User;
 import com.devnear.web.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -40,6 +41,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // 4. 구글이 준 유저 정보를 우리 DB에 맞게 저장하거나 업데이트함
         Map<String, Object> attributes = new HashMap<>(oAuth2User.getAttributes()); // 수정 가능하게 복사
         User user = saveOrUpdate(registrationId, attributes);
+
+        // [보고] 봇 리뷰 반영: 토큰을 발급하는 SuccessHandler로 가기 전에, 유저 상태를 먼저 확인하여 입구 컷
+        if (!user.isEnabled()) {
+            throw new InternalAuthenticationServiceException("접근이 차단된 계정입니다. (상태: " + user.getStatus() + ")");
+        }
 
         // [보고] 핸들러에서 꺼내 쓸 수 있게 DB PK(id)와 상태(status)를 attributes에 추가함
         attributes.put("id", user.getId());
