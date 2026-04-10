@@ -35,6 +35,9 @@ public class CommunityPost extends BaseTimeEntity {
     @Column(nullable = false)
     private int commentCount;
 
+    @Version
+    private Long version;
+
     public CommunityPost(String title, String content, Long authorId) {
         this.title = title;
         this.content = content;

@@ -8,6 +8,7 @@ import com.devnear.web.service.community.CommunityCommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,7 +21,8 @@ public class CommunityCommentController {
 
     @PostMapping("/api/community/comments")
     public ResponseEntity<Long> create(@RequestBody CommunityCommentCreateRequest request,
-                                       @RequestHeader("USER-ID") Long userId) {
+                                       Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(communityCommentService.create(request, userId));
     }
@@ -33,14 +35,16 @@ public class CommunityCommentController {
     @PutMapping("/api/community/comments/{commentId}")
     public ResponseEntity<CommunitySuccessResponse> update(@PathVariable Long commentId,
                                                            @RequestBody CommunityCommentUpdateRequest request,
-                                                           @RequestHeader("USER-ID") Long userId) {
+                                                           Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
         communityCommentService.update(commentId, request, userId);
         return ResponseEntity.ok(new CommunitySuccessResponse(true));
     }
 
     @DeleteMapping("/api/community/comments/{commentId}")
     public ResponseEntity<CommunitySuccessResponse> delete(@PathVariable Long commentId,
-                                                           @RequestHeader("USER-ID") Long userId) {
+                                                           Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
         communityCommentService.delete(commentId, userId);
         return ResponseEntity.ok(new CommunitySuccessResponse(true));
     }
