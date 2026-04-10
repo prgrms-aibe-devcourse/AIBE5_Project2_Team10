@@ -57,7 +57,9 @@ public class ProjectController {
     @GetMapping
     public ResponseEntity<Page<ProjectResponse>> getProjectList(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(projectService.getProjectList(pageable));
+
+        Page<ProjectResponse> responses = projectService.getProjectList(pageable);
+        return ResponseEntity.ok(responses);
     }
 
     @Operation(summary = "내 프로젝트 목록 조회", description = "로그인한 유저가 작성한 프로젝트 공고만 조회합니다.")
@@ -65,6 +67,8 @@ public class ProjectController {
     public ResponseEntity<Page<ProjectResponse>> getMyProjects(
             @AuthenticationPrincipal User user,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(projectService.getMyProjectList(user, pageable));
+
+        Page<ProjectResponse> responses = projectService.getMyProjectList(user, pageable);
+        return ResponseEntity.ok(responses);
     }
 }
