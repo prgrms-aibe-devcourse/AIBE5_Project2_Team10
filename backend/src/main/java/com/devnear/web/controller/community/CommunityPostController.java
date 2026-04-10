@@ -2,15 +2,14 @@ package com.devnear.web.controller.community;
 
 import com.devnear.web.dto.community.*;
 import com.devnear.web.service.community.CommunityPostService;
+import com.devnear.web.domain.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/community/posts")
@@ -21,8 +20,12 @@ public class CommunityPostController {
 
     @PostMapping
     public ResponseEntity<Long> create(@RequestBody CommunityPostCreateRequest request,
-                                       Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+                                       @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Long userId = user.getId();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(communityPostService.create(request, userId));
     }
@@ -45,31 +48,47 @@ public class CommunityPostController {
     @PutMapping("/{postId}")
     public ResponseEntity<CommunitySuccessResponse> update(@PathVariable Long postId,
                                                            @RequestBody CommunityPostUpdateRequest request,
-                                                           Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+                                                           @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Long userId = user.getId();
         communityPostService.update(postId, request, userId);
         return ResponseEntity.ok(new CommunitySuccessResponse(true));
     }
 
     @DeleteMapping("/{postId}")
     public ResponseEntity<CommunitySuccessResponse> delete(@PathVariable Long postId,
-                                                           Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+                                                           @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Long userId = user.getId();
         communityPostService.delete(postId, userId);
         return ResponseEntity.ok(new CommunitySuccessResponse(true));
     }
 
     @PostMapping("/{postId}/like")
     public ResponseEntity<CommunityLikeResponse> like(@PathVariable Long postId,
-                                                      Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+                                                      @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Long userId = user.getId();
         return ResponseEntity.ok(communityPostService.like(postId, userId));
     }
 
     @DeleteMapping("/{postId}/like")
     public ResponseEntity<CommunityLikeResponse> cancelLike(@PathVariable Long postId,
-                                                            Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+                                                            @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Long userId = user.getId();
         return ResponseEntity.ok(communityPostService.cancelLike(postId, userId));
     }
 }
