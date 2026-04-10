@@ -7,5 +7,5 @@ import lombok.Getter;
 @AllArgsConstructor
 public class TokenResponse {
     private String accessToken;
-    private String tokenType; // "Bearer" 라고 넣어줄 겁니다.
+    private String tokenType; // "Bearer" 라고 넣어줌
 }
