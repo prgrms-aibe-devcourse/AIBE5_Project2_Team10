@@ -63,6 +63,27 @@ public class ProjectService {
         log.info("프로젝트 삭제 완료 - ID: {}, 삭제자: {}", projectId, user.getEmail());
     }
 
+    @Transactional(readOnly = true)
+    public Page<ProjectResponse> getProjectList(Pageable pageable) {
+        return projectRepository.findAll(pageable)
+                .map(ProjectResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProjectResponse> getMyProjectList(User user, Pageable pageable) {
+        ClientProfile clientProfile = findClientProfileByUser(user);
+        return projectRepository.findAllByClientProfile(clientProfile, pageable)
+                .map(ProjectResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectResponse getProject(Long projectId) {
+        Project project = projectRepository.findByIdWithClientProfile(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("해당 프로젝트 공고를 찾을 수 없습니다. ID: " + projectId));
+
+        return ProjectResponse.from(project);
+    }
+
     private ClientProfile findClientProfileByUser(User user) {
         return clientProfileRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("클라이언트 프로필이 등록되지 않았습니다."));
