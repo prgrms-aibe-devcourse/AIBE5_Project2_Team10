@@ -24,10 +24,14 @@ public class PortfolioImage {
     @Column(name = "image_url", nullable = false, length = 500)
     private String imageUrl;
 
+    @Column(name = "sort_order", nullable = false)
+    private Integer sortOrder;
+
     @Builder
-    public PortfolioImage(Portfolio portfolio, String imageUrl) {
+    public PortfolioImage(Portfolio portfolio, String imageUrl, Integer sortOrder) {
         this.portfolio = portfolio;
         this.imageUrl = imageUrl;
+        this.sortOrder = sortOrder != null ? sortOrder : 0;
     }
 
     public void setPortfolio(Portfolio portfolio) {

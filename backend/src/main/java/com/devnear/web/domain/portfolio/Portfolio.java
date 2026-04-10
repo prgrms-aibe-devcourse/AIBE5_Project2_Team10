@@ -38,6 +38,7 @@ public class Portfolio extends BaseTimeEntity {
 
     // [연관관계] 포트폴리오 내 다중 상세 이미지들 (1:N)
     @OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC")
     private Set<PortfolioImage> portfolioImages = new LinkedHashSet<>();
 
     // [연관관계] 포트폴리오에 사용된 기술 스택들 (고아 객체 제거 옵션 켜서 스킬 수정 시 자동 삭제)
