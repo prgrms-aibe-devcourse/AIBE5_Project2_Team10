@@ -24,6 +24,12 @@ public class CommunityCommentService {
 
     @Transactional
     public Long create(CommunityCommentCreateRequest request, Long authorId) {
+        if (request.getPostId() == null) {
+            throw new IllegalArgumentException("게시글 ID는 필수입니다.");
+        }
+        if (authorId == null) {
+            throw new IllegalArgumentException("작성자 ID는 필수입니다.");
+        }
         validateCommentRequest(request.getContent());
         CommunityPost post = communityPostService.getPost(request.getPostId());
 
