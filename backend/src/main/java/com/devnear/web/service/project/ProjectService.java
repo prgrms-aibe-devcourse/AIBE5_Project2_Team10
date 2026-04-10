@@ -4,6 +4,10 @@ import com.devnear.web.domain.client.ClientProfile;
 import com.devnear.web.domain.client.ClientProfileRepository;
 import com.devnear.web.domain.project.Project;
 import com.devnear.web.domain.project.ProjectRepository;
+import com.devnear.web.domain.project.ProjectSkill;
+import com.devnear.web.domain.project.ProjectSkillRepository;
+import com.devnear.web.domain.skill.Skill;
+import com.devnear.web.domain.skill.SkillRepository;
 import com.devnear.web.domain.user.User;
 import com.devnear.web.dto.project.ProjectRequest;
 import com.devnear.web.dto.project.ProjectResponse;
@@ -16,26 +20,35 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j // 로그 기록을 위한 어노테이션 추가
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ProjectService {
     private final ProjectRepository projectRepository;
     private final ClientProfileRepository clientProfileRepository;
+    private final SkillRepository skillRepository;
+    private final ProjectSkillRepository projectSkillRepository;
 
     @Transactional
     public Long createProject(User user, ProjectRequest request) {
         ClientProfile clientProfile = findClientProfileByUser(user);
 
-        // 오프라인 프로젝트 필수 정보 검증
         if (request.isOffline() && (request.getLocation() == null || request.getLatitude() == null)) {
             throw new IllegalArgumentException("오프라인 프로젝트는 장소 정보가 필수입니다.");
         }
 
         Project project = projectRepository.save(request.toEntity(clientProfile));
 
-        // 민감 정보는 DEBUG 레벨에서만, 마스킹하여 기록
+        // 태그(스킬) 처리
+        if (request.getSkillNames() != null && !request.getSkillNames().isEmpty()) {
+            mapSkillsToProject(project, request.getSkillNames());
+        }
+
         if (log.isDebugEnabled()) {
             log.debug("새 프로젝트 등록 - ID: {}, 작성자: {}, 오프라인: {}, 주소: {}",
                     project.getId(), user.getEmail(), request.isOffline(), maskAddress(request.getLocation()));
@@ -53,6 +66,40 @@ public class ProjectService {
         }
 
         project.update(request);
+
+        // 스킬 정보 업데이트
+        if (request.getSkillNames() != null) {
+            projectSkillRepository.deleteByProject(project);
+            if (!request.getSkillNames().isEmpty()) {
+                mapSkillsToProject(project, request.getSkillNames());
+            } else {
+                project.updateSkills(Collections.emptyList());
+            }
+        }
+    }
+
+    /**
+     * 입력받은 스킬 이름들을 기반으로 스킬 엔티티를 찾거나 생성하고, 프로젝트에 연결합니다.
+     */
+    private void mapSkillsToProject(Project project, List<String> skillNames) {
+        List<ProjectSkill> projectSkills = skillNames.stream()
+                .map(String::trim)
+                .filter(name -> !name.isEmpty())
+                .map(name -> {
+                    Skill skill = skillRepository.findByName(name)
+                            .orElseGet(() -> skillRepository.save(Skill.builder()
+                                    .name(name)
+                                    .isDefault(false) // 사용자가 직접 추가한 경우(태그)
+                                    .build()));
+                    return ProjectSkill.builder()
+                            .project(project)
+                            .skill(skill)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        projectSkillRepository.saveAll(projectSkills);
+        project.updateSkills(projectSkills);
     }
 
     @Transactional
@@ -99,9 +146,6 @@ public class ProjectService {
         return project;
     }
 
-    /**
-     * 개인정보 보호를 위한 주소 마스킹 처리
-     */
     private String maskAddress(String address) {
         if (address == null || address.length() < 5) return "****";
         return address.substring(0, 5) + "...(하위 주소 마스킹)";
