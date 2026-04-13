@@ -153,6 +153,9 @@ public class ProjectService {
     @Transactional
     public void closeProject(User user, Long projectId) {
         Project project = findProjectAndValidateOwner(user, projectId);
+        if (project.getStatus() != ProjectStatus.OPEN) {
+            throw new IllegalStateException("모집 중인 프로젝트만 마감할 수 있습니다.");
+        }
         project.close();
     }
 
