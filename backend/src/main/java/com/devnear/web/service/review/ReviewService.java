@@ -38,28 +38,40 @@ public class ReviewService {
 
     @Transactional
     public Long createFreelancerReview(User user, FreelancerReviewCreateRequest request) {
+        // 로그인한 사용자의 클라이언트 프로필 조회
         ClientProfile reviewerClient = clientProfileRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("클라이언트 프로필이 없습니다."));
 
+        // 요청으로 들어온 프리랜서 프로필 조회
         FreelancerProfile freelancer = freelancerProfileRepository.findById(request.getFreelancerId())
                 .orElseThrow(() -> new ResourceNotFoundException("프리랜서 프로필이 없습니다."));
 
+        // 요청으로 들어온 프로젝트 조회
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new ResourceNotFoundException("프로젝트를 찾을 수 없습니다."));
 
+        // 완료된 프로젝트인지 확인
         validateCompletedProject(project);
+
+        // 로그인한 사용자가 해당 프로젝트의 클라이언트인지 확인
         validateProjectOwner(project, reviewerClient);
 
+        // [중요] 요청한 freelancerId가 실제 해당 프로젝트에 참여한 프리랜서인지 검증
+        validateProjectFreelancer(project, freelancer);
+
+        // 같은 프로젝트에 대해 같은 클라이언트가 같은 프리랜서에게 중복 리뷰 작성했는지 확인
         if (freelancerReviewRepository.existsByProjectIdAndReviewerClientAndFreelancer(
                 request.getProjectId(), reviewerClient, freelancer)) {
             throw new ResourceConflictException("이미 해당 프로젝트에 대한 프리랜서 리뷰를 작성했습니다.");
         }
 
+        // 점수 유효성 검증
         validateScore(request.getWorkQuality());
         validateScore(request.getDeadline());
         validateScore(request.getCommunication());
         validateScore(request.getExpertise());
 
+        // 리뷰 생성
         FreelancerReview review = FreelancerReview.builder()
                 .projectId(request.getProjectId())
                 .reviewerClient(reviewerClient)
@@ -71,6 +83,7 @@ public class ReviewService {
                 .comment(request.getComment())
                 .build();
 
+        // 저장 후 평점 재계산
         freelancerReviewRepository.save(review);
         updateFreelancerRating(freelancer);
 
@@ -79,27 +92,40 @@ public class ReviewService {
 
     @Transactional
     public Long createClientReview(User user, ClientReviewCreateRequest request) {
+        // 로그인한 사용자의 프리랜서 프로필 조회
         FreelancerProfile reviewerFreelancer = freelancerProfileRepository.findByUser_Id(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("프리랜서 프로필이 없습니다."));
 
+        // 요청으로 들어온 클라이언트 프로필 조회
         ClientProfile client = clientProfileRepository.findById(request.getClientId())
                 .orElseThrow(() -> new ResourceNotFoundException("클라이언트 프로필이 없습니다."));
 
+        // 요청으로 들어온 프로젝트 조회
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new ResourceNotFoundException("프로젝트를 찾을 수 없습니다."));
 
+        // 완료된 프로젝트인지 확인
         validateCompletedProject(project);
 
+        // 요청한 clientId가 실제 해당 프로젝트의 클라이언트인지 확인
+        validateProjectClient(project, client);
+
+        // [중요] 로그인한 프리랜서가 실제 해당 프로젝트에 참여한 프리랜서인지 검증
+        validateProjectFreelancer(project, reviewerFreelancer);
+
+        // 같은 프로젝트에 대해 같은 프리랜서가 같은 클라이언트에게 중복 리뷰 작성했는지 확인
         if (clientReviewRepository.existsByProjectIdAndReviewerFreelancerAndClient(
                 request.getProjectId(), reviewerFreelancer, client)) {
             throw new ResourceConflictException("이미 해당 프로젝트에 대한 클라이언트 리뷰를 작성했습니다.");
         }
 
+        // 점수 유효성 검증
         validateScore(request.getRequirementClarity());
         validateScore(request.getCommunication());
         validateScore(request.getPaymentReliability());
         validateScore(request.getWorkAttitude());
 
+        // 리뷰 생성
         ClientReview review = ClientReview.builder()
                 .projectId(request.getProjectId())
                 .reviewerFreelancer(reviewerFreelancer)
@@ -111,6 +137,7 @@ public class ReviewService {
                 .comment(request.getComment())
                 .build();
 
+        // 저장 후 평점 재계산
         clientReviewRepository.save(review);
         updateClientRating(client);
 
@@ -179,18 +206,39 @@ public class ReviewService {
         client.updateRating(average);
     }
 
+    // 프로젝트가 완료 상태인지 확인
     private void validateCompletedProject(Project project) {
         if (project.getStatus() != ProjectStatus.COMPLETED) {
             throw new IllegalArgumentException("완료된 프로젝트만 리뷰할 수 있습니다.");
         }
     }
 
+    // 로그인한 클라이언트가 실제 프로젝트 소유자인지 확인
     private void validateProjectOwner(Project project, ClientProfile reviewerClient) {
         if (!project.getClientProfile().getId().equals(reviewerClient.getId())) {
             throw new IllegalArgumentException("해당 프로젝트의 클라이언트만 프리랜서 리뷰를 작성할 수 있습니다.");
         }
     }
 
+    // 요청한 클라이언트가 실제 프로젝트의 클라이언트인지 확인
+    private void validateProjectClient(Project project, ClientProfile client) {
+        if (!project.getClientProfile().getId().equals(client.getId())) {
+            throw new IllegalArgumentException("해당 프로젝트의 클라이언트만 리뷰할 수 있습니다.");
+        }
+    }
+
+    // [핵심 추가] 요청/로그인 프리랜서가 실제 프로젝트 참여 프리랜서인지 확인
+    private void validateProjectFreelancer(Project project, FreelancerProfile freelancer) {
+        if (project.getFreelancerProfile() == null) {
+            throw new IllegalArgumentException("해당 프로젝트에 매칭된 프리랜서가 없습니다.");
+        }
+
+        if (!project.getFreelancerProfile().getId().equals(freelancer.getId())) {
+            throw new IllegalArgumentException("해당 프로젝트에 참여한 프리랜서만 리뷰할 수 있습니다.");
+        }
+    }
+
+    // 별점 검증
     private void validateScore(BigDecimal score) {
         if (score == null) {
             throw new IllegalArgumentException("별점은 필수입니다.");
