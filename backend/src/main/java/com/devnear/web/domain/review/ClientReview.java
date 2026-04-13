@@ -13,23 +13,25 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Entity
-@Table(name = "client_review")
+@Table(
+name = "client_review",
+uniqueConstraints = @UniqueConstraint(
+name = "uk_client_review_project_reviewer_target",
+columnNames = {"project_id", "reviewer_freelancer_id", "client_id"}
+        )
+        )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ClientReview extends BaseTimeEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "client_review_id")
     private Long id;
-
     @Column(name = "project_id", nullable = false)
     private Long projectId;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewer_freelancer_id", nullable = false)
     private FreelancerProfile reviewerFreelancer;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id", nullable = false)
     private ClientProfile client;
