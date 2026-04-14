@@ -83,6 +83,9 @@ public class FreelancerProfile extends BaseTimeEntity {
         this.averageRating = 0.0;
         this.reviewCount = 0;
         this.completedProjects = 0;
+        
+        // [추가] 500 NPE 에러 방어: Builder로 생성 시 컬렉션이 null이 되지 않도록 빈 리스트로 명시적 초기화
+        this.freelancerSkills = new ArrayList<>();
     }
 
     // [비즈니스 로직] 기본 프로필 데이터 일괄 수정
@@ -108,15 +111,23 @@ public class FreelancerProfile extends BaseTimeEntity {
 
     // [비즈니스 로직] 보유 스킬 목록 갱신
     public void updateSkills(List<FreelancerSkill> rawSkills) {
+        // [추가] 500 NPE 에러 2차 방어: 컬렉션이 혹시라도 null일 경우를 대비
+        if (this.freelancerSkills == null) {
+            this.freelancerSkills = new ArrayList<>();
+        }
+        
         this.freelancerSkills.clear(); // 기존 스킬 데이터베이스에서 자동 비우기
-        for (FreelancerSkill skill : rawSkills) {
-            this.freelancerSkills.add(skill);
-            // 양방향 연관관계 동기화
-            if (skill.getFreelancerProfile() != this) {
-                skill.setFreelancerProfile(this);
+        if (rawSkills != null) {
+            for (FreelancerSkill skill : rawSkills) {
+                this.freelancerSkills.add(skill);
+                // 양방향 연관관계 동기화
+                if (skill.getFreelancerProfile() != this) {
+                    skill.setFreelancerProfile(this);
+                }
             }
         }
     }
+
     // 리뷰 평균 점수를 갱신하는 메서드
     public void updateAverageRating(Double averageRating) {
         this.averageRating = averageRating;

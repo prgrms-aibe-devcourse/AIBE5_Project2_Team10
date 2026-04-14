@@ -152,6 +152,23 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
+    public Page<ProjectResponse> getProjectList(Pageable pageable) {
+        return projectRepository.findAll(pageable)
+                .map(ProjectResponse::from);
+    }
+
+    // [수정] 프론트엔드 리뷰 반영: activeTab(온/오프라인) 추가
+    @Transactional(readOnly = true)
+    public Page<ProjectResponse> searchProjects(String keyword, String location, String skill, Boolean online, Boolean offline, Pageable pageable) {
+        String safeKeyword = (keyword != null && keyword.trim().isEmpty()) ? null : keyword;
+        String safeLocation = (location != null && location.trim().isEmpty()) ? null : location;
+        String safeSkill = (skill != null && skill.trim().isEmpty()) ? null : skill;
+
+        return projectRepository.searchProjects(safeKeyword, safeLocation, safeSkill, online, offline, pageable)
+                .map(ProjectResponse::from);
+    }
+
+    @Transactional(readOnly = true)
     public Page<ProjectResponse> getMyProjectList(User user, ProjectStatus status, Pageable pageable) {
         ClientProfile clientProfile = findClientProfileByUser(user);
 

@@ -13,7 +13,6 @@ import java.util.Optional;
 
 public interface ProjectRepository extends JpaRepository<Project, Long>, ProjectRepositoryCustom {
 
-    // 수정/삭제 시 권한 확인 및 상세 조회용 (스킬 정보 포함)
     @Query("SELECT DISTINCT p FROM Project p " +
            "JOIN FETCH p.clientProfile cp " +
            "JOIN FETCH cp.user " +
@@ -31,4 +30,25 @@ public interface ProjectRepository extends JpaRepository<Project, Long>, Project
 
     @EntityGraph(attributePaths = {"clientProfile", "clientProfile.user", "projectSkills", "projectSkills.skill"})
     Page<Project> findAllByClientProfileAndStatus(ClientProfile clientProfile, ProjectStatus status, Pageable pageable);
+
+    // [수정] 봇 리뷰 반영: countQuery 명시 및 메모리 페이징 방지용 DISTINCT 활용
+    @EntityGraph(attributePaths = {"clientProfile", "clientProfile.user"})
+    @Query(value = "SELECT DISTINCT p FROM Project p " +
+           "WHERE (:keyword IS NULL OR p.projectName LIKE %:keyword% OR p.clientProfile.companyName LIKE %:keyword%) " +
+           "AND (:location IS NULL OR p.location LIKE %:location%) " +
+           "AND (:skill IS NULL OR EXISTS (SELECT 1 FROM ProjectSkill ps JOIN ps.skill s WHERE ps.project = p AND s.name LIKE %:skill%)) " +
+           "AND (:online IS NULL OR p.online = :online) " +
+           "AND (:offline IS NULL OR p.offline = :offline)",
+           countQuery = "SELECT COUNT(DISTINCT p) FROM Project p " +
+           "WHERE (:keyword IS NULL OR p.projectName LIKE %:keyword% OR p.clientProfile.companyName LIKE %:keyword%) " +
+           "AND (:location IS NULL OR p.location LIKE %:location%) " +
+           "AND (:skill IS NULL OR EXISTS (SELECT 1 FROM ProjectSkill ps JOIN ps.skill s WHERE ps.project = p AND s.name LIKE %:skill%)) " +
+           "AND (:online IS NULL OR p.online = :online) " +
+           "AND (:offline IS NULL OR p.offline = :offline)")
+    Page<Project> searchProjects(@Param("keyword") String keyword, 
+                                 @Param("location") String location, 
+                                 @Param("skill") String skill, 
+                                 @Param("online") Boolean online,
+                                 @Param("offline") Boolean offline,
+                                 Pageable pageable);
 }

@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Project", description = "프로젝트 공고 관련 API")
 @RestController
-@RequestMapping("/api/projects")
+@RequestMapping(value = {"/api/projects", "/api/v1/projects"})
 @RequiredArgsConstructor
 public class ProjectController {
 
@@ -55,13 +55,18 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "프로젝트 검색 및 목록 조회", description = "검색 조건(키워드, 기술 스택, 위치 등)에 맞는 프로젝트 목록을 조회합니다.")
+    @Operation(summary = "전체 프로젝트 목록 조회", description = "필터 및 최신순으로 프로젝트 공고를 페이징하여 조회합니다.")
     @GetMapping
     public ResponseEntity<Page<ProjectResponse>> getProjectList(
-            ProjectSearchCond cond,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String skill,
+            @RequestParam(required = false) Boolean online,
+            @RequestParam(required = false) Boolean offline,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<ProjectResponse> responses = projectService.searchProjects(cond, pageable);
+        // [수정] 프론트엔드 리뷰 반영: 온라인/오프라인 필터 파라미터 추가
+        Page<ProjectResponse> responses = projectService.searchProjects(keyword, location, skill, online, offline, pageable);
         return ResponseEntity.ok(responses);
     }
 
