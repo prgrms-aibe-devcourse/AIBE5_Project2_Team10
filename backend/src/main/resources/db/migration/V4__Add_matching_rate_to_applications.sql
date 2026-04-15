@@ -1,0 +1,3 @@
+ALTER TABLE Applications
+    ADD COLUMN matching_rate DECIMAL(5,2) NOT NULL DEFAULT 0.00;
+
