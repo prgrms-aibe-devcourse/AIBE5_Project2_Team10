@@ -1,7 +1,9 @@
 package com.devnear.web.controller.application;
 
 import com.devnear.web.domain.user.User;
+import com.devnear.web.dto.application.ApplicantResponse;
 import com.devnear.web.dto.application.ApplicationRequest;
+import com.devnear.web.dto.application.ApplicationStatusUpdateRequest;
 import com.devnear.web.dto.application.MyApplicationResponse;
 import com.devnear.web.service.application.ApplicationService;
 import jakarta.validation.Valid;
@@ -59,6 +61,39 @@ public class ApplicationController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+    }
+
+    /**
+     * [CLI] 내 프로젝트 지원자 목록을 매칭률 높은 순으로 조회
+     */
+    @GetMapping("/projects/{projectId}/applications")
+    public ResponseEntity<List<ApplicantResponse>> getApplicantsForMyProject(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long projectId) {
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<ApplicantResponse> applicants = applicationService.getApplicantsForMyProject(user, projectId);
+        return ResponseEntity.ok(applicants);
+    }
+
+    /**
+     * [CLI] 지원 상태를 수락/거절로 업데이트
+     */
+    @PatchMapping("/applications/{applicationId}/status")
+    public ResponseEntity<Void> updateApplicationStatus(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long applicationId,
+            @Valid @RequestBody ApplicationStatusUpdateRequest request) {
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        applicationService.updateApplicationStatus(user, applicationId, request);
+        return ResponseEntity.noContent().build();
     }
 
     // (CLI-05) 작업 영역

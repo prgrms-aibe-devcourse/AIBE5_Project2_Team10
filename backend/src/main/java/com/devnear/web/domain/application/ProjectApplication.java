@@ -60,19 +60,34 @@ public class ProjectApplication {
     @Column(nullable = false, length = 20)
     private ApplicationStatus status;
 
+    /**
+     * 지원 시점 기준 프로젝트 요구 스킬 대비 프리랜서 보유 스킬 일치율(0~100).
+     * - 계산식: (교집합 개수 / 프로젝트 스킬 개수) * 100
+     */
+    @Column(name = "matching_rate", nullable = false, columnDefinition = "DECIMAL(5,2)")
+    private Double matchingRate;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
 
     @Builder
     public ProjectApplication(Project project, FreelancerProfile freelancerProfile,
-            ClientProfile clientProfile, Integer bidPrice, String message) {
+            ClientProfile clientProfile, Integer bidPrice, String message, Double matchingRate) {
         this.project = project;
         this.freelancerProfile = freelancerProfile;
         this.clientProfile = clientProfile;
         this.bidPrice = bidPrice;
         this.message = message;
         this.status = ApplicationStatus.PENDING; // 최초 제출 시 항상 '검토대기'
+        this.matchingRate = (matchingRate == null) ? 0.0 : matchingRate;
+    }
+
+    public void updateStatus(ApplicationStatus status) {
+        if (status == null) {
+            throw new IllegalArgumentException("지원 상태(status)는 null일 수 없습니다.");
+        }
+        this.status = status;
     }
 
     // (CLI-05) 작업 영역
