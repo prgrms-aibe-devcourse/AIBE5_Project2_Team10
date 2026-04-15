@@ -13,25 +13,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Gemini AI Code Reviewer
+        # 👑 PR에 직접 댓글을 달아주는 '전용 리뷰어' 비서입니다.
+        uses: truongnh1992/gemini-ai-code-reviewer@v9.2.1
         with:
-          # PR의 변경 내용을 가져오기 위해 필수입니다.
-          fetch-depth: 2
+          # 🚨 주의: 이 비서는 반드시 '대문자'로 적어줘야 알아듣습니다!
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get PR Diff
-        # 변경된 코드 내용을 텍스트 파일로 저장해서 비서에게 줄 준비를 합니다.
-        run: git diff HEAD^ HEAD > pr_diff.txt
-
-      - name: Run Gemini CLI
-        uses: google-github-actions/run-gemini-cli@v0.1.21
-        with:
-          # 🚨 주의: 반드시 'gemini_'가 붙은 이름을 써야 합니다! (로그에서 확인했죠?)
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          # 🚨 모델명 뒤에 '-latest'를 붙이는 것이 2026년의 타당한 규칙입니다.
-          gemini_model: "gemini-1.5-flash-latest"
-
-          # 비서에게 '코드 파일'과 '명령'을 한꺼번에 전달합니다.
-          prompt: |
-            아래는 이번 PR에서 변경된 코드 파일들이다. 
-            시니어 개발자 입장에서 한국어로 친절하고 예리하게 리뷰해줘.
-            
-            $(cat pr_diff.txt)
+          # 🚨 모델 이름에서 '-latest'를 뺍니다. (404 에러 해결책)
+          GEMINI_MODEL: "gemini-1.5-flash"
