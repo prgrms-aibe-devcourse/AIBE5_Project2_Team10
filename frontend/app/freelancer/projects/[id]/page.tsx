@@ -1,10 +1,20 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import api from '@/app/lib/axios'; // axios 인스턴스 가져오기
-import { useParams } from 'next/navigation';
+import api from '@/app/lib/axios';
+import { useParams, useRouter } from 'next/navigation';
+import {
+    Calendar,
+    MapPin,
+    DollarSign,
+    Globe,
+    ArrowLeft,
+    Clock,
+    Briefcase,
+    ChevronRight,
+    Sparkles // 프리미엄 느낌을 위한 아이콘 추가
+} from 'lucide-react';
 
-// 백엔드에서 받아올 프로젝트 데이터 타입 정의
 interface ProjectDetail {
     projectId: number;
     companyName: string;
@@ -22,8 +32,8 @@ interface ProjectDetail {
 }
 
 export default function ProjectDetailPage() {
-    // Next.js 클라이언트 컴포넌트에서 params 가져오기
     const params = useParams();
+    const router = useRouter();
     const id = params?.id as string;
 
     const [project, setProject] = useState<ProjectDetail | null>(null);
@@ -33,106 +43,162 @@ export default function ProjectDetailPage() {
     useEffect(() => {
         const fetchProjectDetail = async () => {
             if (!id) return;
-            
             try {
-                // 백엔드 API 호출
                 const response = await api.get(`/v1/projects/${id}`);
                 setProject(response.data);
             } catch (err: any) {
-                console.error("프로젝트 상세 조회 실패:", err);
                 setError("프로젝트 정보를 불러오는데 실패했습니다.");
             } finally {
                 setLoading(false);
             }
         };
-
         fetchProjectDetail();
     }, [id]);
 
-    // 💰 금액 포맷팅 함수
     const formatBudget = (amount: number) => {
-        return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(amount);
+        return new Intl.NumberFormat('ko-KR', {
+            style: 'currency',
+            currency: 'KRW',
+            maximumFractionDigits: 0
+        }).format(amount);
     };
 
-    if (loading) {
-        return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
-    }
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F9F8FF]">
+            <div className="animate-pulse flex flex-col items-center">
+                <div className="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-violet-600 font-medium">멋진 프로젝트를 불러오는 중...</p>
+            </div>
+        </div>
+    );
 
-    if (error || !project) {
-        return <div className="min-h-screen flex items-center justify-center text-red-500">{error || "프로젝트를 찾을 수 없습니다."}</div>;
-    }
+    if (error || !project) return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F9F8FF]">
+            <div className="text-center p-8 bg-white rounded-2xl shadow-xl shadow-violet-100">
+                <p className="text-red-500 text-lg font-bold mb-4">{error || "프로젝트를 찾을 수 없습니다."}</p>
+                <button onClick={() => router.back()} className="text-violet-600 hover:text-violet-800 font-bold inline-flex items-center">
+                    <ArrowLeft className="w-4 h-4 mr-2" /> 목록으로 돌아가기
+                </button>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="max-w-4xl mx-auto p-6 space-y-8">
-            {/* 1. 헤더 영역 */}
-            <section className="border-b pb-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-bold">
-                        {project.status === 'OPEN' ? '모집 중' : project.status}
-                    </span>
-                    <span className="text-gray-500 text-sm">회사명: {project.companyName}</span>
-                </div>
-                <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{project.projectName}</h1>
-                <p className="text-gray-600">{project.location}</p>
-            </section>
+        <div className="min-h-screen bg-[#F9F8FF] pb-20">
+            {/* 상단 네비게이션 */}
+            <nav className="max-w-5xl mx-auto p-4 flex items-center">
+                <button
+                    onClick={() => router.back()}
+                    className="p-2 hover:bg-violet-100 rounded-full transition-all group"
+                >
+                    <ArrowLeft className="w-6 h-6 text-gray-600 group-hover:text-violet-600" />
+                </button>
+            </nav>
 
-            {/* 2. 핵심 요약 정보 (Grid) */}
-            <section className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-6 rounded-xl">
-                <div>
-                    <p className="text-gray-400 text-sm">예상 금액</p>
-                    <p className="font-bold text-lg">{formatBudget(project.budget)}</p>
-                </div>
-                <div>
-                    <p className="text-gray-400 text-sm">모집 마감일</p>
-                    <p className="font-bold text-lg text-red-500">{project.deadline}</p>
-                </div>
-                <div>
-                    <p className="text-gray-400 text-sm">작업 방식</p>
-                    <p className="font-bold text-lg">
-                        {project.online && project.offline ? "온/오프라인 병행" : project.online ? "원격(온라인)" : "상주(오프라인)"}
-                    </p>
-                </div>
-                <div>
-                    <p className="text-gray-400 text-sm">위치</p>
-                    <p className="font-bold text-lg truncate">
-                        {project.location ? project.location.split(' ')[1] || "지역 미정" : "위치 정보 없음"}
-                    </p>
-                </div>
-            </section>
+            <main className="max-w-4xl mx-auto px-6">
+                {/* 1. 헤더 영역 */}
+                <section className="mb-10 text-center md:text-left">
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
+                        <span className="bg-violet-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md shadow-violet-200">
+                            {project.status === 'OPEN' ? '모집 중' : project.status}
+                        </span>
+                        <div className="flex items-center text-violet-500 text-sm font-semibold">
+                            <Sparkles className="w-4 h-4 mr-1" />
+                            Premium Project
+                        </div>
+                    </div>
+                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6">
+                        {project.projectName}
+                    </h1>
+                    <div className="flex items-center justify-center md:justify-start text-slate-500 font-medium">
+                        <Briefcase className="w-4 h-4 mr-2 text-violet-400" />
+                        <span className="mr-4">{project.companyName}</span>
+                        <MapPin className="w-4 h-4 mr-2 text-violet-400" />
+                        <span>{project.location}</span>
+                    </div>
+                </section>
 
-            {/* 3. 기술 스택 (Skills) */}
-            <section className="space-y-3">
-                <h3 className="text-xl font-bold">요구 기술 스택</h3>
-                <div className="flex flex-wrap gap-2">
-                    {project.skills && project.skills.length > 0 ? (
-                        project.skills.map((skill, index) => (
+                {/* 2. 핵심 정보 카드 그리드 */}
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
+                    <div className="bg-white p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow border border-violet-50 flex items-center gap-5">
+                        <div className="p-4 bg-violet-50 rounded-2xl">
+                            <DollarSign className="w-7 h-7 text-violet-600" />
+                        </div>
+                        <div>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">예상 금액</p>
+                            <p className="text-2xl font-black text-slate-900">{formatBudget(project.budget)}</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow border border-violet-50 flex items-center gap-5">
+                        <div className="p-4 bg-fuchsia-50 rounded-2xl">
+                            <Calendar className="w-7 h-7 text-fuchsia-600" />
+                        </div>
+                        <div>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">모집 마감</p>
+                            <p className="text-2xl font-black text-slate-900">{project.deadline}</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow border border-violet-50 flex items-center gap-5">
+                        <div className="p-4 bg-indigo-50 rounded-2xl">
+                            <Globe className="w-7 h-7 text-indigo-600" />
+                        </div>
+                        <div>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">근무 방식</p>
+                            <p className="text-xl font-extrabold text-slate-900">
+                                {project.online && project.offline ? "온/오프라인 병행" : project.online ? "원격(온라인)" : "상주(오프라인)"}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow border border-violet-50 flex items-center gap-5">
+                        <div className="p-4 bg-purple-50 rounded-2xl">
+                            <Clock className="w-7 h-7 text-purple-600" />
+                        </div>
+                        <div>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">활동 지역</p>
+                            <p className="text-xl font-extrabold text-slate-900">
+                                {project.location ? project.location.split(' ')[1] || "지역 미정" : "위치 정보 없음"}
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* 3. 기술 스택 섹션 */}
+                <section className="mb-12">
+                    <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center">
+                        요구 스택
+                        <div className="ml-3 h-1 flex-1 bg-violet-100 rounded-full"></div>
+                    </h3>
+                    <div className="flex flex-wrap gap-3">
+                        {project.skills?.map((skill, index) => (
                             <span
                                 key={index}
-                                className="bg-gray-800 text-white px-4 py-1.5 rounded-lg text-sm font-medium"
+                                className="bg-white text-violet-700 border border-violet-100 px-5 py-2.5 rounded-2xl text-sm font-bold shadow-sm hover:bg-violet-600 hover:text-white transition-all cursor-default"
                             >
                                 {skill}
                             </span>
-                        ))
-                    ) : (
-                        <span className="text-gray-500">등록된 기술 스택이 없습니다.</span>
-                    )}
-                </div>
-            </section>
+                        ))}
+                    </div>
+                </section>
 
-            {/* 4. 프로젝트 상세 내용 */}
-            <section className="space-y-3">
-                <h3 className="text-xl font-bold">상세 설명</h3>
-                <div className="bg-white border p-6 rounded-xl leading-relaxed text-gray-800 whitespace-pre-wrap">
-                    {project.detail}
-                </div>
-            </section>
+                {/* 4. 프로젝트 상세 내용 */}
+                <section className="mb-12">
+                    <h3 className="text-2xl font-black text-slate-900 mb-6">상세 업무 가이드</h3>
+                    <div className="bg-white border border-violet-50 p-10 rounded-[2rem] leading-relaxed text-slate-700 whitespace-pre-wrap shadow-sm text-lg italic font-medium">
+                        "{project.detail}"
+                    </div>
+                </section>
 
-            {/* 5. 하단 액션 버튼 */}
-            <div className="flex justify-center pt-10">
-                <button className="w-full md:w-64 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg">
-                    이 프로젝트에 지원하기
-                </button>
-            </div>
+                {/* 5. 하단 액션 바 */}
+                <div className="sticky bottom-8 flex justify-center w-full px-4">
+                    <button className="w-full max-w-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-black py-6 rounded-2xl transition-all shadow-2xl shadow-violet-200 hover:scale-[1.03] active:scale-[0.97] flex items-center justify-center gap-3 group">
+                        이 프로젝트에 지금 지원하기
+                        <ChevronRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                    </button>
+                </div>
+            </main>
         </div>
     );
 }
