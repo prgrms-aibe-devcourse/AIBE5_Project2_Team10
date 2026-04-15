@@ -1,4 +1,4 @@
-name: Gemini AI Code Reviewer
+name: Gemini AI Code Review
 
 on:
   issue_comment:
@@ -28,7 +28,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Gemini AI Code Review
+      - name: Run Gemini Review
         uses: truongnh1992/gemini-ai-code-reviewer@v9.2.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
